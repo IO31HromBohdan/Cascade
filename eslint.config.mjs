@@ -6,20 +6,24 @@ import { defineConfig } from 'eslint/config';
 
 export default defineConfig([
   {
-    ignores: ['dist/**', 'node_modules/**', 'coverage/**', '**/*.d.ts'],
+    ignores: ['**/dist/**', '**/node_modules/**', 'coverage/**', 'eslint.config.mjs', '**/*.d.ts'],
   },
 
+  js.configs.recommended,
+
+  ...tseslint.configs.recommended,
+
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.tsx'],
     languageOptions: {
       parser: tseslint.parser,
       parserOptions: {
-        project: './tsconfig.json',
         sourceType: 'module',
         ecmaVersion: 'latest',
       },
       globals: {
         ...globals.node,
+        ...globals.browser,
       },
     },
     plugins: {
@@ -30,9 +34,6 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': ['warn', { fixStyle: 'inline-type-imports' }],
     },
   },
-
-  js.configs.recommended,
-  ...tseslint.configs.recommendedTypeChecked,
 
   prettier,
 ]);

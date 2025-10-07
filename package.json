@@ -6,8 +6,10 @@
   "scripts": {
     "lint": "eslint .",
     "format": "prettier --write .",
-    "build": "tsc -p tsconfig.json",
-    "test": "echo \"Tests passed\""
+    "build": "pnpm -r build",
+    "test": "echo \"Tests passed\"",
+    "dev:frontend": "pnpm --filter frontend dev",
+    "dev:backend": "pnpm --filter backend start:dev"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
@@ -16,6 +18,8 @@
     ]
   },
   "devDependencies": {
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
     "@eslint/js": "^9.39.1",
     "@types/node": "^24.10.1",
     "@typescript-eslint/eslint-plugin": "^8.0.0",

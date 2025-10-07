@@ -3,10 +3,10 @@ const config = {
   semi: true,
   singleQuote: true,
   printWidth: 100,
-  trailingComma: "all",
+  trailingComma: 'all',
   tabWidth: 2,
   bracketSpacing: true,
-  arrowParens: "avoid",
+  arrowParens: 'avoid',
 };
 
 export default config;
