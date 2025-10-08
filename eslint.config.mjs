@@ -3,6 +3,7 @@ import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
 import globals from 'globals';
 import { defineConfig } from 'eslint/config';
+import importPlugin from 'eslint-plugin-import';
 
 export default defineConfig([
   {
@@ -10,7 +11,6 @@ export default defineConfig([
   },
 
   js.configs.recommended,
-
   ...tseslint.configs.recommended,
 
   {
@@ -28,6 +28,14 @@ export default defineConfig([
     },
     plugins: {
       '@typescript-eslint': tseslint.plugin,
+      import: importPlugin,
+    },
+    settings: {
+      'import/resolver': {
+        typescript: {
+          project: ['./tsconfig.json', './frontend/tsconfig.app.json', './backend/tsconfig.json'],
+        },
+      },
     },
     rules: {
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],

@@ -10,5 +10,10 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true
   },
-  "include": ["frontend/**/*.ts", "frontend/**/*.tsx", "backend/**/*.ts"]
+  "include": ["frontend/**/*.ts", "frontend/**/*.tsx", "backend/**/*.ts"],
+
+  "baseUrl": ".",
+  "paths": {
+    "@/*": ["frontend/src/*", "backend/src/*"]
+  }
 }
