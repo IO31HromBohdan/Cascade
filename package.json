@@ -4,11 +4,10 @@
   "main": "index.js",
   "license": "ISC",
   "scripts": {
-    "lint": "eslint \"{frontend,backend}/**/*.ts\"",
-    "format": "prettier --write \"{frontend,backend}/**/*.ts\"",
-    "build": "tsc",
-    "test": "echo \"Tests passed\"",
-    "prepare": "husky"
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "build": "tsc -p tsconfig.json",
+    "test": "echo \"Tests passed\""
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
