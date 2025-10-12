@@ -1,5 +1,4 @@
-/** @type {import("prettier").Config} */
-const config = {
+export default {
   semi: true,
   singleQuote: true,
   printWidth: 100,
@@ -8,5 +7,3 @@ const config = {
   bracketSpacing: true,
   arrowParens: 'avoid',
 };
-
-export default config;
