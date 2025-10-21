@@ -8,12 +8,12 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
-    "noEmit": true
+    "noEmit": true,
+    
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["frontend/src/*", "backend/src/*"]
+    }
   },
-  "include": ["frontend/**/*.ts", "frontend/**/*.tsx", "backend/**/*.ts"],
-
-  "baseUrl": ".",
-  "paths": {
-    "@/*": ["frontend/src/*", "backend/src/*"]
-  }
+  "include": ["frontend/**/*.ts", "frontend/**/*.tsx", "backend/**/*.ts"]
 }
