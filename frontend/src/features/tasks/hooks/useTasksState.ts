@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { Task, TaskFilters, TaskPriority, TaskStatus, Tag } from '@/shared/types';
+import { createTaskApi, deleteTaskApi, fetchTasks, updateTaskApi } from '@/shared/api/tasksApi';
 
 const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -7,45 +8,6 @@ const initialTags: Tag[] = [
   { id: 'study', name: 'Університет', color: '#2563eb' },
   { id: 'work', name: 'Робота', color: '#16a34a' },
   { id: 'personal', name: 'Особисте', color: '#f97316' },
-];
-
-const initialTasks: Task[] = [
-  {
-    id: '1',
-    title: 'Підготувати конспект по дисципліні',
-    description: 'Закінчити конспект до завтрашньої пари',
-    status: 'planned',
-    priority: 'high',
-    scheduledDate: todayIso,
-    dueDate: todayIso,
-    tagIds: ['study'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    title: "Зробити рев'ю коду",
-    description: 'Перевірити pull request у робочому проєкті',
-    status: 'in_progress',
-    priority: 'medium',
-    scheduledDate: todayIso,
-    dueDate: undefined,
-    tagIds: ['work'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    title: 'Прогулянка ввечері',
-    description: 'Вийти на 30 хвилин на свіже повітря',
-    status: 'planned',
-    priority: 'low',
-    scheduledDate: todayIso,
-    dueDate: undefined,
-    tagIds: ['personal'],
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
 ];
 
 const defaultFilters: TaskFilters = {
@@ -59,7 +21,10 @@ export interface UseTasksStateResult {
   filteredTasks: Task[];
   tags: Tag[];
   filters: TaskFilters;
+  loading: boolean;
+  error: string | null;
   setFilters: (next: TaskFilters) => void;
+  refresh: () => Promise<void>;
   createTask: (payload: {
     title: string;
     description?: string;
@@ -67,15 +32,18 @@ export interface UseTasksStateResult {
     dueDate?: string;
     priority: TaskPriority;
     tagIds: string[];
-  }) => void;
+  }) => Promise<void>;
   updateTask: (
     id: string,
     patch: Partial<
-      Pick<Task, 'title' | 'description' | 'scheduledDate' | 'dueDate' | 'priority' | 'tagIds'>
+      Pick<
+        Task,
+        'title' | 'description' | 'scheduledDate' | 'dueDate' | 'priority' | 'tagIds' | 'status'
+      >
     >,
-  ) => void;
-  deleteTask: (id: string) => void;
-  toggleStatus: (id: string) => void;
+  ) => Promise<void>;
+  deleteTask: (id: string) => Promise<void>;
+  toggleStatus: (id: string) => Promise<void>;
 }
 
 function getNextStatus(status: TaskStatus): TaskStatus {
@@ -85,9 +53,29 @@ function getNextStatus(status: TaskStatus): TaskStatus {
 }
 
 export function useTasksState(): UseTasksStateResult {
-  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [tags] = useState<Tag[]>(initialTags);
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const data = await fetchTasks();
+      setTasks(data);
+    } catch (e) {
+      console.error(e);
+      setError('Не вдалося завантажити задачі');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void loadTasks();
+  }, []);
 
   const filteredTasks = useMemo(() => {
     return tasks.filter(task => {
@@ -104,54 +92,49 @@ export function useTasksState(): UseTasksStateResult {
     });
   }, [tasks, filters]);
 
-  const createTask: UseTasksStateResult['createTask'] = payload => {
-    const nowIso = new Date().toISOString();
-    const newTask: Task = {
-      id: crypto.randomUUID(),
-      title: payload.title,
-      description: payload.description,
-      status: 'planned',
-      priority: payload.priority,
-      scheduledDate: payload.scheduledDate,
-      dueDate: payload.dueDate,
-      tagIds: payload.tagIds,
-      createdAt: nowIso,
-      updatedAt: nowIso,
-    };
-    setTasks(prev => [newTask, ...prev]);
+  const createTask: UseTasksStateResult['createTask'] = async payload => {
+    try {
+      setError(null);
+      const created = await createTaskApi({
+        ...payload,
+        status: 'planned',
+      });
+      setTasks(prev => [created, ...prev]);
+    } catch (e) {
+      console.error(e);
+      setError('Не вдалося створити задачу');
+    }
   };
 
-  const updateTask: UseTasksStateResult['updateTask'] = (id, patch) => {
-    const nowIso = new Date().toISOString();
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === id
-          ? {
-              ...task,
-              ...patch,
-              updatedAt: nowIso,
-            }
-          : task,
-      ),
-    );
+  const updateTask: UseTasksStateResult['updateTask'] = async (id, patch) => {
+    try {
+      setError(null);
+      const updated = await updateTaskApi(id, patch);
+      setTasks(prev => prev.map(task => (task.id === id ? updated : task)));
+    } catch (e) {
+      console.error(e);
+      setError('Не вдалося оновити задачу');
+    }
   };
 
-  const deleteTask: UseTasksStateResult['deleteTask'] = id => {
-    setTasks(prev => prev.filter(task => task.id !== id));
+  const deleteTask: UseTasksStateResult['deleteTask'] = async id => {
+    try {
+      setError(null);
+      await deleteTaskApi(id);
+      setTasks(prev => prev.filter(task => task.id !== id));
+    } catch (e) {
+      console.error(e);
+      setError('Не вдалося видалити задачу');
+    }
   };
 
-  const toggleStatus: UseTasksStateResult['toggleStatus'] = id => {
-    setTasks(prev =>
-      prev.map(task =>
-        task.id === id
-          ? {
-              ...task,
-              status: getNextStatus(task.status),
-              updatedAt: new Date().toISOString(),
-            }
-          : task,
-      ),
-    );
+  const toggleStatus: UseTasksStateResult['toggleStatus'] = async id => {
+    const current = tasks.find(t => t.id === id);
+    if (!current) return;
+
+    const nextStatus = getNextStatus(current.status);
+
+    await updateTask(id, { status: nextStatus });
   };
 
   return {
@@ -159,7 +142,10 @@ export function useTasksState(): UseTasksStateResult {
     filteredTasks,
     tags,
     filters,
+    loading,
+    error,
     setFilters,
+    refresh: loadTasks,
     createTask,
     updateTask,
     deleteTask,

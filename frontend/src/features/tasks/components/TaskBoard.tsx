@@ -19,6 +19,8 @@ export function TaskBoard() {
     updateTask,
     deleteTask,
     toggleStatus,
+    loading,
+    error,
   } = useTasksState();
 
   const [formState, setFormState] = useState<FormState>({ mode: 'closed' });
@@ -31,7 +33,7 @@ export function TaskBoard() {
     setFormState({ mode: 'edit', task });
   };
 
-  const handleFormSubmit = (payload: {
+  const handleFormSubmit = async (payload: {
     title: string;
     description?: string;
     scheduledDate: string;
@@ -41,9 +43,9 @@ export function TaskBoard() {
     tagIds: string[];
   }) => {
     if (formState.mode === 'create') {
-      createTask(payload);
+      await createTask(payload);
     } else if (formState.mode === 'edit') {
-      updateTask(formState.task.id, payload);
+      await updateTask(formState.task.id, payload);
     }
 
     setFormState({ mode: 'closed' });
@@ -99,6 +101,9 @@ export function TaskBoard() {
               Всього: <span className="font-semibold text-slate-100">{filteredTasks.length}</span>
             </span>
           </div>
+
+          {loading && <p className="text-xs text-slate-400">Завантаження задач...</p>}
+          {error && <p className="text-xs text-rose-400">Помилка: {error}</p>}
 
           <TaskList
             tasks={filteredTasks}
