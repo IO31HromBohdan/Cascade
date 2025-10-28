@@ -15,3 +15,12 @@ body {
     'SF Pro Text',
     sans-serif;
 }
+
+button,
+select,
+input[type='checkbox'],
+input[type='radio'],
+input[type='date'],
+input[type='file'] {
+  cursor: pointer;
+}
