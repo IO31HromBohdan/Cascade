@@ -1,89 +1,95 @@
 /* eslint-disable @typescript-eslint/consistent-type-imports */
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { Prisma, Task } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { Task, Tag } from '@prisma/client';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
-import { QueryTasksDto } from './dto/query-tasks.dto';
 
 @Injectable()
 export class TasksService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async findAll(query: QueryTasksDto): Promise<Task[]> {
-    const where: Prisma.TaskWhereInput = {};
-
-    if (query.date) {
-      where.scheduledDate = query.date;
-    } else if (query.from || query.to) {
-      where.scheduledDate = {};
-      if (query.from) {
-        (where.scheduledDate as Prisma.StringFilter).gte = query.from;
-      }
-      if (query.to) {
-        (where.scheduledDate as Prisma.StringFilter).lte = query.to;
-      }
-    }
-
-    if (query.status) {
-      where.status = query.status;
-    }
-
-    return this.prisma.task.findMany({
-      where,
-      orderBy: [{ scheduledDate: 'asc' }, { createdAt: 'desc' }],
-    });
-  }
-
-  async findOne(id: string): Promise<Task> {
-    const task = await this.prisma.task.findUnique({ where: { id } });
-    if (!task) {
-      throw new NotFoundException('Task not found');
-    }
-    return task;
-  }
-
   async create(dto: CreateTaskDto): Promise<Task> {
-    const now = new Date();
-    return this.prisma.task.create({
-      data: {
-        title: dto.title,
-        description: dto.description,
-        scheduledDate: dto.scheduledDate,
-        dueDate: dto.dueDate,
-        priority: dto.priority,
-        status: dto.status ?? 'planned',
-        tagIds: dto.tagIds ?? [],
-        createdAt: now,
-        updatedAt: now,
-      },
+    return this.prisma.$transaction(async tx => {
+      const tagKeys: string[] = dto.tagIds ?? [];
+
+      let tags: Tag[] = [];
+      if (tagKeys.length > 0) {
+        tags = await tx.tag.findMany({
+          where: { key: { in: tagKeys } },
+        });
+      }
+
+      const task = await tx.task.create({
+        data: {
+          title: dto.title,
+          description: dto.description,
+          status: dto.status ?? 'planned',
+          priority: dto.priority,
+          scheduledDate: dto.scheduledDate,
+          dueDate: dto.dueDate,
+          tagIds: tagKeys,
+        },
+      });
+
+      if (tags.length > 0) {
+        await tx.taskTag.createMany({
+          data: tags.map(tag => ({
+            taskId: task.id,
+            tagId: tag.id,
+          })),
+          skipDuplicates: true,
+        });
+      }
+
+      return task;
     });
   }
 
   async update(id: string, dto: UpdateTaskDto): Promise<Task> {
-    await this.ensureExists(id);
-    return this.prisma.task.update({
-      where: { id },
-      data: {
-        ...dto,
-        updatedAt: new Date(),
-      },
+    return this.prisma.$transaction(async tx => {
+      const existing = await tx.task.findUnique({ where: { id } });
+
+      if (!existing) {
+        throw new NotFoundException(`Task with id=${id} not found`);
+      }
+
+      let tagKeys: string[] = existing.tagIds;
+
+      if (dto.tagIds) {
+        tagKeys = dto.tagIds;
+
+        await tx.taskTag.deleteMany({ where: { taskId: id } });
+
+        if (dto.tagIds.length > 0) {
+          const tags: Tag[] = await tx.tag.findMany({
+            where: { key: { in: dto.tagIds } },
+          });
+
+          await tx.taskTag.createMany({
+            data: tags.map(tag => ({
+              taskId: id,
+              tagId: tag.id,
+            })),
+            skipDuplicates: true,
+          });
+        }
+      }
+
+      const updated = await tx.task.update({
+        where: { id },
+        data: {
+          title: dto.title ?? existing.title,
+          description: dto.description ?? existing.description,
+          status: dto.status ?? existing.status,
+          priority: dto.priority ?? existing.priority,
+          scheduledDate: dto.scheduledDate ?? existing.scheduledDate,
+          dueDate: dto.dueDate ?? existing.dueDate,
+          tagIds: tagKeys,
+        },
+      });
+
+      return updated;
     });
-  }
-
-  async remove(id: string): Promise<void> {
-    await this.ensureExists(id);
-    await this.prisma.task.delete({ where: { id } });
-  }
-
-  private async ensureExists(id: string): Promise<void> {
-    const exists = await this.prisma.task.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-
-    if (!exists) {
-      throw new NotFoundException('Task not found');
-    }
   }
 }
