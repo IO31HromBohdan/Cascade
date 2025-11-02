@@ -1,4 +1,4 @@
-import type { TaskFilters, TaskStatus } from '@/shared/types';
+import type { TaskFilters, TaskStatus, Tag } from '@/shared/types';
 
 const statusOptions: { value: TaskStatus | 'all'; label: string }[] = [
   { value: 'all', label: 'Усі' },
@@ -10,7 +10,7 @@ const statusOptions: { value: TaskStatus | 'all'; label: string }[] = [
 interface TaskFiltersProps {
   filters: TaskFilters;
   onChange: (next: TaskFilters) => void;
-  availableTags: { id: string; name: string }[];
+  availableTags: Tag[];
 }
 
 export function TaskFilters({ filters, onChange, availableTags }: TaskFiltersProps) {
@@ -67,7 +67,7 @@ export function TaskFilters({ filters, onChange, availableTags }: TaskFiltersPro
           >
             <option value="all">Усі</option>
             {availableTags.map(tag => (
-              <option key={tag.id} value={tag.id}>
+              <option key={tag.id} value={tag.key}>
                 {tag.name}
               </option>
             ))}

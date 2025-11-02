@@ -1,10 +1,10 @@
 import { type FormEvent, useState } from 'react';
-import type { Task, TaskPriority } from '@/shared/types';
+import type { Task, TaskPriority, Tag } from '@/shared/types';
 
 interface TaskFormProps {
   mode: 'create' | 'edit';
   initialTask?: Task;
-  availableTags: { id: string; name: string }[];
+  availableTags: Tag[];
   defaultDate: string;
   onSubmit: (payload: {
     title: string;
@@ -30,7 +30,8 @@ export function TaskForm({
   const [scheduledDate, setScheduledDate] = useState(initialTask?.scheduledDate ?? defaultDate);
   const [dueDate, setDueDate] = useState(initialTask?.dueDate ?? '');
   const [priority, setPriority] = useState<TaskPriority>(initialTask?.priority ?? 'medium');
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(initialTask?.tagIds ?? []);
+
+  const [selectedTagKeys, setSelectedTagKeys] = useState<string[]>(initialTask?.tagIds ?? []);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -42,13 +43,13 @@ export function TaskForm({
       scheduledDate,
       dueDate: dueDate || undefined,
       priority,
-      tagIds: selectedTagIds,
+      tagIds: selectedTagKeys,
     });
   };
 
-  const handleToggleTag = (tagId: string) => {
-    setSelectedTagIds(prev =>
-      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId],
+  const handleToggleTag = (tagKey: string) => {
+    setSelectedTagKeys(prev =>
+      prev.includes(tagKey) ? prev.filter(key => key !== tagKey) : [...prev, tagKey],
     );
   };
 
@@ -122,12 +123,12 @@ export function TaskForm({
           <div className="text-xs font-medium text-slate-300">Теги</div>
           <div className="flex flex-wrap gap-2">
             {availableTags.map(tag => {
-              const selected = selectedTagIds.includes(tag.id);
+              const selected = selectedTagKeys.includes(tag.key);
               return (
                 <button
                   key={tag.id}
                   type="button"
-                  onClick={() => handleToggleTag(tag.id)}
+                  onClick={() => handleToggleTag(tag.key)}
                   className={`rounded-full px-3 py-1 text-xs font-medium transition
                     ${
                       selected

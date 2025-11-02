@@ -77,17 +77,13 @@ export function TaskBoard() {
           </button>
         </header>
 
-        <TaskFilters
-          filters={filters}
-          onChange={setFilters}
-          availableTags={tags.map(t => ({ id: t.id, name: t.name }))}
-        />
+        <TaskFilters filters={filters} onChange={setFilters} availableTags={tags} />
 
         {formState.mode !== 'closed' && (
           <TaskForm
             mode={formState.mode}
             initialTask={formState.mode === 'edit' ? formState.task : undefined}
-            availableTags={tags.map(t => ({ id: t.id, name: t.name }))}
+            availableTags={tags}
             defaultDate={filters.date ?? todayIso}
             onSubmit={handleFormSubmit}
             onCancel={handleCancel}

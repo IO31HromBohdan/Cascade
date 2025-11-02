@@ -4,7 +4,7 @@ import { TaskItem } from './TaskItem';
 interface TaskListProps {
   tasks: Task[];
   allTags: Tag[];
-  onToggleStatus: (id: string) => void;
+  onToggleStatus: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (id: string) => void;
 }
@@ -25,7 +25,7 @@ export function TaskList({ tasks, allTags, onToggleStatus, onEdit, onDelete }: T
           key={task.id}
           task={task}
           allTags={allTags}
-          onToggleStatus={() => onToggleStatus(task.id)}
+          onToggleStatus={() => onToggleStatus(task)}
           onEdit={() => onEdit(task)}
           onDelete={() => onDelete(task.id)}
         />

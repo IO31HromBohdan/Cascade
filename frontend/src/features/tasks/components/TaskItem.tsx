@@ -32,7 +32,7 @@ function getStatusBadgeClasses(status: Task['status']): string {
 }
 
 export function TaskItem({ task, allTags, onToggleStatus, onEdit, onDelete }: TaskItemProps) {
-  const tags = allTags.filter(tag => task.tagIds.includes(tag.id));
+  const tags = allTags.filter(tag => task.tagIds.includes(tag.key));
   const isOverdue =
     task.dueDate &&
     task.status !== 'done' &&

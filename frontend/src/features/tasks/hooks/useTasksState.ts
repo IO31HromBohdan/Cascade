@@ -56,10 +56,6 @@ export function useTasksState() {
       data = data.filter(task => task.tagIds.includes(filters.tagId));
     }
 
-    if (filters.tagId !== 'all') {
-      data = data.filter(task => task.tagIds.includes(filters.tagId));
-    }
-
     return data;
   }, [tasks, filters]);
 
