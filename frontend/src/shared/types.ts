@@ -3,6 +3,7 @@ export type TaskPriority = 'low' | 'medium' | 'high';
 
 export interface Tag {
   id: string;
+  key: string;
   name: string;
   color?: string;
 }

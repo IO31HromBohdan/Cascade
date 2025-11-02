@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
-import type { Task, TaskFilters, TaskPriority, TaskStatus, Tag } from '@/shared/types';
-import { createTaskApi, deleteTaskApi, fetchTasks, updateTaskApi } from '@/shared/api/tasksApi';
+import type { Task, Tag, TaskFilters, TaskStatus } from '@/shared/types';
+import {
+  fetchTasks,
+  createTaskApi,
+  updateTaskApi,
+  deleteTaskApi,
+  type CreateTaskPayload,
+} from '@/shared/api/tasksApi';
+import { fetchTags } from '@/shared/api/tagsApi';
 
 const todayIso = new Date().toISOString().slice(0, 10);
-
-const initialTags: Tag[] = [
-  { id: 'study', name: 'Університет', color: '#2563eb' },
-  { id: 'work', name: 'Робота', color: '#16a34a' },
-  { id: 'personal', name: 'Особисте', color: '#f97316' },
-];
 
 const defaultFilters: TaskFilters = {
   date: todayIso,
@@ -16,55 +17,26 @@ const defaultFilters: TaskFilters = {
   tagId: 'all',
 };
 
-export interface UseTasksStateResult {
-  tasks: Task[];
-  filteredTasks: Task[];
-  tags: Tag[];
-  filters: TaskFilters;
-  loading: boolean;
-  error: string | null;
-  setFilters: (next: TaskFilters) => void;
-  refresh: () => Promise<void>;
-  createTask: (payload: {
-    title: string;
-    description?: string;
-    scheduledDate: string;
-    dueDate?: string;
-    priority: TaskPriority;
-    tagIds: string[];
-  }) => Promise<void>;
-  updateTask: (
-    id: string,
-    patch: Partial<
-      Pick<
-        Task,
-        'title' | 'description' | 'scheduledDate' | 'dueDate' | 'priority' | 'tagIds' | 'status'
-      >
-    >,
-  ) => Promise<void>;
-  deleteTask: (id: string) => Promise<void>;
-  toggleStatus: (id: string) => Promise<void>;
-}
-
-function getNextStatus(status: TaskStatus): TaskStatus {
-  if (status === 'planned') return 'in_progress';
-  if (status === 'in_progress') return 'done';
-  return 'planned';
-}
-
-export function useTasksState(): UseTasksStateResult {
+export function useTasksState() {
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [tags] = useState<Tag[]>(initialTags);
+  const [tags, setTags] = useState<Tag[]>([]);
   const [filters, setFilters] = useState<TaskFilters>(defaultFilters);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTasks = async () => {
+  useEffect(() => {
+    void loadInitialData();
+  }, []);
+
+  const loadInitialData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const data = await fetchTasks();
-      setTasks(data);
+
+      const [tasksData, tagsData] = await Promise.all([fetchTasks(), fetchTags()]);
+
+      setTasks(tasksData);
+      setTags(tagsData);
     } catch (e) {
       console.error(e);
       setError('Не вдалося завантажити задачі');
@@ -73,26 +45,25 @@ export function useTasksState(): UseTasksStateResult {
     }
   };
 
-  useEffect(() => {
-    void loadTasks();
-  }, []);
-
   const filteredTasks = useMemo(() => {
-    return tasks.filter(task => {
-      if (filters.date && task.scheduledDate !== filters.date) {
-        return false;
-      }
-      if (filters.status !== 'all' && task.status !== filters.status) {
-        return false;
-      }
-      if (filters.tagId !== 'all' && !task.tagIds.includes(filters.tagId)) {
-        return false;
-      }
-      return true;
-    });
+    let data = tasks;
+
+    if (filters.date) {
+      data = data.filter(task => task.scheduledDate === filters.date);
+    }
+
+    if (filters.tagId !== 'all') {
+      data = data.filter(task => task.tagIds.includes(filters.tagId));
+    }
+
+    if (filters.tagId !== 'all') {
+      data = data.filter(task => task.tagIds.includes(filters.tagId));
+    }
+
+    return data;
   }, [tasks, filters]);
 
-  const createTask: UseTasksStateResult['createTask'] = async payload => {
+  const createTask = async (payload: Omit<CreateTaskPayload, 'status'>) => {
     try {
       setError(null);
       const created = await createTaskApi({
@@ -106,35 +77,34 @@ export function useTasksState(): UseTasksStateResult {
     }
   };
 
-  const updateTask: UseTasksStateResult['updateTask'] = async (id, patch) => {
+  const updateTask = async (id: string, patch: Partial<CreateTaskPayload>) => {
     try {
       setError(null);
       const updated = await updateTaskApi(id, patch);
-      setTasks(prev => prev.map(task => (task.id === id ? updated : task)));
+      setTasks(prev => prev.map(t => (t.id === id ? updated : t)));
     } catch (e) {
       console.error(e);
       setError('Не вдалося оновити задачу');
     }
   };
 
-  const deleteTask: UseTasksStateResult['deleteTask'] = async id => {
+  const deleteTask = async (id: string) => {
     try {
       setError(null);
       await deleteTaskApi(id);
-      setTasks(prev => prev.filter(task => task.id !== id));
+      setTasks(prev => prev.filter(t => t.id !== id));
     } catch (e) {
       console.error(e);
       setError('Не вдалося видалити задачу');
     }
   };
 
-  const toggleStatus: UseTasksStateResult['toggleStatus'] = async id => {
-    const current = tasks.find(t => t.id === id);
-    if (!current) return;
+  const toggleStatus = async (task: Task) => {
+    const order: TaskStatus[] = ['planned', 'in_progress', 'done'];
+    const idx = order.indexOf(task.status);
+    const nextStatus = idx === -1 ? 'planned' : order[(idx + 1) % order.length];
 
-    const nextStatus = getNextStatus(current.status);
-
-    await updateTask(id, { status: nextStatus });
+    await updateTask(task.id, { status: nextStatus });
   };
 
   return {
@@ -142,10 +112,10 @@ export function useTasksState(): UseTasksStateResult {
     filteredTasks,
     tags,
     filters,
+    setFilters,
     loading,
     error,
-    setFilters,
-    refresh: loadTasks,
+    reload: loadInitialData,
     createTask,
     updateTask,
     deleteTask,
