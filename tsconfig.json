@@ -9,7 +9,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
-    
+
     "baseUrl": ".",
     "paths": {
       "@/*": ["frontend/src/*", "backend/src/*"]
