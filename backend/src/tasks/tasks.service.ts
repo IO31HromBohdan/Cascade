@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { Task, Tag } from '@prisma/client';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
+import { QueryTasksDto } from '@/tasks/dto/query-tasks.dto';
 
 @Injectable()
 export class TasksService {
@@ -90,6 +91,36 @@ export class TasksService {
       });
 
       return updated;
+    });
+  }
+
+  async findAll(_query: QueryTasksDto): Promise<Task[]> {
+    return this.prisma.task.findMany({
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async findOne(id: string): Promise<Task> {
+    const task = await this.prisma.task.findUnique({
+      where: { id },
+    });
+
+    if (!task) {
+      throw new NotFoundException(`Task with id=${id} not found`);
+    }
+
+    return task;
+  }
+
+  async remove(id: string): Promise<void> {
+    await this.prisma.$transaction(async tx => {
+      await tx.taskTag.deleteMany({
+        where: { taskId: id },
+      });
+
+      await tx.task.delete({
+        where: { id },
+      });
     });
   }
 }
