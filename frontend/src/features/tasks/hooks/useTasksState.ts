@@ -29,17 +29,22 @@ export function useTasksState() {
   }, []);
 
   const loadInitialData = async () => {
+    setLoading(true);
+    setError(null);
+
     try {
-      setLoading(true);
-      setError(null);
-
-      const [tasksData, tagsData] = await Promise.all([fetchTasks(), fetchTags()]);
-
+      const tasksData = await fetchTasks();
       setTasks(tasksData);
-      setTags(tagsData);
     } catch (e) {
       console.error(e);
       setError('Не вдалося завантажити задачі');
+    }
+
+    try {
+      const tagsData = await fetchTags();
+      setTags(tagsData);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }

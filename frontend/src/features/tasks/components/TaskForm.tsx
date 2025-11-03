@@ -121,26 +121,33 @@ export function TaskForm({
 
         <div className="space-y-1">
           <div className="text-xs font-medium text-slate-300">Теги</div>
-          <div className="flex flex-wrap gap-2">
-            {availableTags.map(tag => {
-              const selected = selectedTagKeys.includes(tag.key);
-              return (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => handleToggleTag(tag.key)}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition
-                    ${
-                      selected
-                        ? 'border border-sky-500 bg-sky-500/10 text-sky-300'
-                        : 'border border-slate-700 bg-slate-950 text-slate-200 hover:border-slate-500'
-                    }`}
-                >
-                  {tag.name}
-                </button>
-              );
-            })}
-          </div>
+
+          {availableTags.length === 0 ? (
+            <p className="text-xs text-slate-500">
+              Теги ще не створені. Ви можете створювати задачі й без тегів.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {availableTags.map(tag => {
+                const selected = selectedTagKeys.includes(tag.key);
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => handleToggleTag(tag.key)}
+                    className={`rounded-full px-3 py-1 text-xs font-medium transition
+              ${
+                selected
+                  ? 'border border-sky-500 bg-sky-500/10 text-sky-300'
+                  : 'border border-slate-700 bg-slate-950 text-slate-200 hover:border-slate-500'
+              }`}
+                  >
+                    {tag.name}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       </div>
 
