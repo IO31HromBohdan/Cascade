@@ -1,0 +1,22 @@
+{
+  "mutate": [
+    "src/tasks/tasks.service.ts",
+    "!src/**/*.spec.ts",
+    "!src/**/*.controller.ts"
+  ],
+  "testRunner": "jest",
+  "jest": { "configFile": "jest.config.stryker.mjs" },
+  "reporters": ["clear-text", "html"],
+  "coverageAnalysis": "off",
+  "timeoutMS": 20000,
+  "symlinkNodeModules": true,
+  "packageManager": "pnpm",
+  "ignorePatterns": [
+    "node_modules/**",
+    ".stryker-tmp/**",
+    "dist/**",
+    "coverage/**",
+    "reports/**"
+  ],
+  "logLevel": "warn"
+}
