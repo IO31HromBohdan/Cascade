@@ -71,6 +71,7 @@ export function TaskBoard() {
           <button
             type="button"
             onClick={handleCreate}
+            data-testid="add-task"
             className="inline-flex items-center rounded-xl bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-sky-400"
           >
             + Нова задача

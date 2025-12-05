@@ -68,6 +68,7 @@ export function TaskForm({
           value={title}
           onChange={e => setTitle(e.target.value)}
           required
+          data-testid="task-title"
           className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500/40 focus:ring-2"
         />
       </div>
@@ -78,6 +79,7 @@ export function TaskForm({
           value={description}
           onChange={e => setDescription(e.target.value)}
           rows={3}
+          data-testid="task-description"
           className="w-full rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none ring-sky-500/40 focus:ring-2"
         />
       </div>
@@ -154,6 +156,7 @@ export function TaskForm({
       <div className="flex items-center gap-2 pt-1">
         <button
           type="submit"
+          data-testid="task-save"
           className="inline-flex items-center justify-center rounded-lg bg-sky-500 px-4 py-2 text-sm font-semibold text-slate-950 shadow-sm transition hover:bg-sky-400"
         >
           {mode === 'create' ? 'Створити' : 'Зберегти'}
