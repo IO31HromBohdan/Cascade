@@ -5,8 +5,14 @@ export default defineConfig({
   timeout: 30_000,
   retries: 0,
   use: {
-    baseURL: process.env.E2E_BASE_URL ?? 'http://localhost:5173',
+    baseURL: 'http://localhost:5173',
     trace: 'on-first-retry',
+  },
+  webServer: {
+    command: 'pnpm dev --host 127.0.0.1 --port 5173',
+    url: 'http://localhost:5173',
+    reuseExistingServer: true,
+    timeout: 120_000,
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
 });
