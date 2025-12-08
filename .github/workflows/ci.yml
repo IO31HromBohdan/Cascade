@@ -1,0 +1,113 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Prettier + ESLint + Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Prettier check
+        run: pnpm format:check
+
+      - name: ESLint check
+        run: pnpm lint:check
+
+      - name: Build (frontend + backend)
+        run: pnpm build
+
+  backend_tests:
+    name: Backend tests (unit + e2e) + Postgres
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: cascade_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/cascade_test?schema=public
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Prisma generate + migrate
+        run: |
+          pnpm -C backend prisma:generate
+          pnpm -C backend prisma migrate deploy
+
+      - name: Unit tests
+        run: pnpm -C backend test
+
+      - name: E2E tests
+        run: pnpm -C backend test:e2e
+
+  commitlint:
+    name: Commit message (conventional)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.16.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: Commitlint (PR range)
+        if: github.event_name == 'pull_request'
+        run: pnpm commitlint --from "${{ github.event.pull_request.base.sha }}" --to "${{ github.sha }}"
+
+      - name: Commitlint (push last commit)
+        if: github.event_name == 'push'
+        run: pnpm commitlint --from "${{ github.sha }}~1" --to "${{ github.sha }}"
