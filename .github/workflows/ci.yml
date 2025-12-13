@@ -72,18 +72,22 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      - run: pnpm install --no-frozen-lockfile
+      - name: Install
+        run: pnpm install --no-frozen-lockfile
 
       - name: Prisma generate + migrate
+        working-directory: backend
         run: |
-          pnpm -C backend prisma:generate
-          pnpm -C backend prisma migrate deploy
+          pnpm prisma:generate
+          pnpm prisma migrate deploy
 
       - name: Unit tests
-        run: pnpm -C backend test
+        working-directory: backend
+        run: pnpm test
 
       - name: E2E tests
-        run: pnpm -C backend test:e2e
+        working-directory: backend
+        run: pnpm test:e2e
 
   commitlint:
     name: Commit message (conventional)
