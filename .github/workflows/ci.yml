@@ -35,6 +35,10 @@ jobs:
       - name: ESLint check
         run: pnpm lint:check
 
+      - name: Prisma generate (backend)
+        working-directory: backend
+        run: pnpm prisma:generate
+
       - name: Build (frontend + backend)
         run: pnpm build
 
